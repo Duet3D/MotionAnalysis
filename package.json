@@ -1,0 +1,31 @@
+{
+  "name": "@duet3d/motionanalysis",
+  "version": "3.4.0",
+  "description": "TypeScript library for motion analysis of accelerometer data",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Duet3D/MotionAnalysis.git"
+  },
+  "author": "Christian Hammacher",
+  "license": "LGPL-2.1",
+  "bugs": {
+    "url": "https://github.com/Duet3D/MotionAnalysis/issues"
+  },
+  "homepage": "https://github.com/Duet3D/MotionAnalysis#readme",
+  "devDependencies": {
+    "@types/jest": "^27.0.3",
+    "jest": "^27.4.5",
+    "ts-jest": "^27.1.2",
+    "typescript": "^4.5.2"
+  },
+  "directories": {
+    "lib": "lib"
+  }
+}
