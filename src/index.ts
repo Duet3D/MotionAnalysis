@@ -37,7 +37,7 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
     // Prepare result
     const result = {
         frequencies: new Array(numFreqs),
-        amplitudes: new Array(numFreqs)
+        amplitudes: new Array(samples.length)
     };
     for (let i = 0; i < numFreqs; i++) {
         result.frequencies[i] = i * freqResolution + freqResolution / 2;

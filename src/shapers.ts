@@ -3,12 +3,12 @@
  * TODO: Replace this with enum from @duet3d/objectmodel
  */
 export enum InputShaperType {
-    ei2,
-    ei3,
-    mzv,
-    zvd,
-    zvdd,
-    zvddd
+    ei2 = 'ei2',
+    ei3 = 'ei3',
+    mzv = 'mzv',
+    zvd = 'zvd',
+    zvdd = 'zvdd',
+    zvddd = 'zvddd'
 }
 
 /**
@@ -39,7 +39,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
         durations: []
     };
 
-    const sqrtOneMinusZetaSquared = Math.sqrt(1 - Math.sqrt(dampingFactor));
+    const sqrtOneMinusZetaSquared = Math.sqrt(1 - Math.pow(dampingFactor, 2));
     const dampedFrequency = frequency * sqrtOneMinusZetaSquared;
     const dampedPeriod = 1/dampedFrequency;
     const k = Math.exp(-dampingFactor * Math.PI/sqrtOneMinusZetaSquared);

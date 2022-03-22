@@ -1,15 +1,14 @@
 import { getInputShaperDamping, getInputShaperFactors, InputShaperType } from "../src/shapers";
 
-// This test must not be too precise because we compute with doubles, and we don't need to convert to and from step timings
 function testParameters(type: InputShaperType, frequency: number, amplitudes: number[], durations: number[]) {
     const factors = getInputShaperFactors(type, frequency);
     expect(factors.amplitudes.length).toBe(amplitudes.length);
     expect(factors.durations.length).toBe(durations.length);
     for (let i = 0; i < amplitudes.length; i++) {
-        expect(factors.amplitudes[i]).toBeCloseTo(amplitudes[i], 1);
+        expect(factors.amplitudes[i]).toBeCloseTo(amplitudes[i]);
     }
     for (let i = 0; i < durations.length; i++) {
-        expect(factors.durations[i]).toBeCloseTo(durations[i] / 1000, 2);
+        expect(factors.durations[i]).toBeCloseTo(durations[i] / 1000);
     }
 }
 
