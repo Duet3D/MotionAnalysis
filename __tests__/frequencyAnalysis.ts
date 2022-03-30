@@ -6,8 +6,8 @@ const samplingRate = 1365;
 
 const writeToConsole = false;
 test("analyzeAccelerometerData", () => {
-    const result = analyzeAccelerometerData([yAxisSamples], samplingRate);
-    expect(result.amplitudes.length).toBe(1);
+    const result = analyzeAccelerometerData([yAxisSamples, yAxisSamples], samplingRate);
+    expect(result.amplitudes.length).toBe(2);
 
     // Write output to the console on demand
     if (writeToConsole) {
