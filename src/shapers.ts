@@ -1,15 +1,4 @@
-/**
- * Supported input shaper types
- * TODO: Replace this with enum from @duet3d/objectmodel
- */
-export enum InputShaperType {
-    ei2 = 'ei2',
-    ei3 = 'ei3',
-    mzv = 'mzv',
-    zvd = 'zvd',
-    zvdd = 'zvdd',
-    zvddd = 'zvddd'
-}
+import { InputShapingType } from "@duet3d/objectmodel";
 
 /**
  * Computed factors of an input shaper
@@ -33,7 +22,7 @@ export interface InputShaperFactors {
  * @param dampingFactor Optional damping factor (zeta)
  * @returns Input shaper factors
  */
-export function getInputShaperFactors(type: InputShaperType, frequency: number, dampingFactor: number = 0.1): InputShaperFactors {
+export function getInputShaperFactors(type: InputShapingType, frequency: number, dampingFactor: number = 0.1): InputShaperFactors {
     const result: InputShaperFactors = {
         amplitudes: [],
         durations: []
@@ -45,7 +34,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
     const k = Math.exp(-dampingFactor * Math.PI/sqrtOneMinusZetaSquared);
 
     switch (type) {
-        case InputShaperType.mzv:
+        case InputShapingType.mzv:
             {
                 // Klipper gives amplitude steps of [a3 = k^2 * (1 - 1/sqrt(2)), a2 = k * (sqrt(2) - 1), a1 = 1 - 1/sqrt(2)] all divided by (a1 + a2 + a3)
                 // Rearrange to: a3 = k^2 * (1 - sqrt(2)/2), a2 = k * (sqrt(2) - 1), a1 = (1 - sqrt(2)/2)
@@ -61,7 +50,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             result.durations.push(0.375 * dampedPeriod);
             break;
 
-        case InputShaperType.zvd:
+        case InputShapingType.zvd:
             {
                 const j = Math.pow(1 + k, 2);
                 result.amplitudes.push(1/j);
@@ -71,7 +60,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             result.durations.push(0.5 * dampedPeriod);
             break;
 
-        case InputShaperType.zvdd:
+        case InputShapingType.zvdd:
             {
                 const j = Math.pow(1 + k, 3);
                 result.amplitudes.push(1/j);
@@ -83,7 +72,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             result.durations.push(0.5 * dampedPeriod);
             break;
 
-        case InputShaperType.zvddd:
+        case InputShapingType.zvddd:
             {
                 const j = Math.pow(1 + k, 4);
                 result.amplitudes.push(1/j);
@@ -97,7 +86,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             result.durations.push(0.5 * dampedPeriod);
             break;
 
-        case InputShaperType.ei2:       // see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.465.1337&rep=rep1&type=pdf. United States patent #4,916,635.
+        case InputShapingType.ei2:       // see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.465.1337&rep=rep1&type=pdf. United States patent #4,916,635.
             {
                 const zetaSquared = Math.pow(dampingFactor, 2), zetaCubed = zetaSquared * dampingFactor;
                 result.amplitudes.push((0.16054)                     + (0.76699)                     * dampingFactor + (2.26560)                     * zetaSquared + (-1.22750)                     * zetaCubed);
@@ -110,7 +99,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             }
             break;
 
-        case InputShaperType.ei3:       // see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.465.1337&rep=rep1&type=pdf. United States patent #4,916,635
+        case InputShapingType.ei3:       // see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.465.1337&rep=rep1&type=pdf. United States patent #4,916,635
             {
                 const zetaSquared = Math.pow(dampingFactor, 2);
                 const zetaCubed = zetaSquared * dampingFactor;

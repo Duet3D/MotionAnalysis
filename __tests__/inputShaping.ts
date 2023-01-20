@@ -1,6 +1,7 @@
-import { getInputShaperDamping, getInputShaperFactors, InputShaperType } from "../src/shapers";
+import { InputShapingType } from "@duet3d/objectmodel";
+import { getInputShaperDamping, getInputShaperFactors } from "../src/shapers";
 
-function testParameters(type: InputShaperType, frequency: number, amplitudes: number[], durations: number[]) {
+function testParameters(type: InputShapingType, frequency: number, amplitudes: number[], durations: number[]) {
     const factors = getInputShaperFactors(type, frequency);
     expect(factors.amplitudes.length).toBe(amplitudes.length);
     expect(factors.durations.length).toBe(durations.length);
@@ -47,7 +48,7 @@ function testDamping(start: number, end: number, threshold: number, amplitudes: 
 
 test("inputShaper-ei2", () => {
     // Input shaping 'ei2' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.259 0.619 0.892 with durations (ms) 11.78 11.25 10.98
-    testParameters(InputShaperType.ei2, 44, [0.259, 0.619, 0.892], [11.78, 11.25, 10.98]);
+    testParameters(InputShapingType.ei2, 44, [0.259, 0.619, 0.892], [11.78, 11.25, 10.98]);
 
     // Input shaping 'ei2' at 40.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.259 0.619 0.892 with durations (ms) 12.96 12.37 12.08
     testDamping(23,54,0.15, [0.259, 0.619, 0.892], [12.96, 12.37, 12.08]);
@@ -55,7 +56,7 @@ test("inputShaper-ei2", () => {
 
 test("inputShaper-ei3", () => {
     // Input shaping 'ei3' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.221 0.498 0.758 0.925 with durations (ms) 12.35 11.14 10.91 10.90
-    testParameters(InputShaperType.ei3, 44, [0.221, 0.498, 0.758, 0.925], [12.35, 11.14, 10.91, 10.90]);
+    testParameters(InputShapingType.ei3, 44, [0.221, 0.498, 0.758, 0.925], [12.35, 11.14, 10.91, 10.90]);
 
     // Input shaping 'ei3' at 40.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.221 0.498 0.758 0.925 with durations (ms) 13.58 12.25 12.01 11.99
     testDamping(18,51,0.15, [0.221, 0.498, 0.758, 0.925], [13.58, 12.25, 12.01, 11.99]);
@@ -63,7 +64,7 @@ test("inputShaper-ei3", () => {
 
 test("inputShaper-mzv", () => {
     // Input shaping 'mzv' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.227 0.635 with durations (ms) 8.57 8.57
-    testParameters(InputShaperType.mzv, 44, [0.227, 0.635], [8.57, 8.57]);
+    testParameters(InputShapingType.mzv, 44, [0.227, 0.635], [8.57, 8.57]);
 
     // Input shaping 'mzv' at 40.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.227 0.635 with durations (ms) 9.42 9.42
     testDamping(34,72,0.2, [0.227, 0.635], [9.42, 9.42]);
@@ -71,7 +72,7 @@ test("inputShaper-mzv", () => {
 
 test("inputShaper-zvd", () => {
     // Input shaping 'zvd' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.334 0.822 with durations (ms) 11.42 11.42
-    testParameters(InputShaperType.zvd, 44, [0.334, 0.822], [11.42, 11.42]);
+    testParameters(InputShapingType.zvd, 44, [0.334, 0.822], [11.42, 11.42]);
 
     // Input shaping 'zvd' at 40.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.334 0.822 with durations (ms) 12.56 12.56
     testDamping(33,46,0.1, [0.334, 0.822], [12.56, 12.56]);
@@ -79,7 +80,7 @@ test("inputShaper-zvd", () => {
 
 test("inputShaper-zvdd", () => {
     // Input shaping 'zvdd' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.193 0.616 0.925 with durations (ms) 11.42 11.42 11.42
-    testParameters(InputShaperType.zvdd, 44, [0.193, 0.616, 0.925], [11.42, 11.42, 11.42]);
+    testParameters(InputShapingType.zvdd, 44, [0.193, 0.616, 0.925], [11.42, 11.42, 11.42]);
 
     // Input shaping 'zvdd' at 40.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.193 0.616 0.925 with durations (ms) 12.56 12.56 12.56
     testDamping(29,51,0.1, [0.193, 0.616, 0.925], [12.56, 12.56, 12.56]);
@@ -87,7 +88,7 @@ test("inputShaper-zvdd", () => {
 
 test("inputShaper-zvddd", () => {
     // Input shaping 'zvddd' at 44.0Hz damping factor 0.10, min. acceleration 10.0, impulses 0.112 0.438 0.795 0.968 with durations (ms) 11.42 11.42 11.42 11.42
-    testParameters(InputShaperType.zvddd, 44, [0.112, 0.438, 0.795, 0.968], [11.42, 11.42, 11.42, 11.42]);
+    testParameters(InputShapingType.zvddd, 44, [0.112, 0.438, 0.795, 0.968], [11.42, 11.42, 11.42, 11.42]);
 
     // Input shaping 'zvddd' at 40.0Hz damping factor 0.05, min. acceleration 10.0, impulses 0.085 0.374 0.744 0.955 with durations (ms) 12.52 12.52 12.52 12.52
     testDamping(32,47,0.01, [0.085, 0.374, 0.744, 0.955], [12.52, 12.52, 12.52, 12.52]);
