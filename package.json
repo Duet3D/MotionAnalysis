@@ -1,6 +1,6 @@
 {
   "name": "@duet3d/motionanalysis",
-  "version": "3.4.0",
+  "version": "3.6.0",
   "description": "TypeScript library for motion analysis of accelerometer data",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,10 +21,10 @@
   },
   "homepage": "https://github.com/Duet3D/MotionAnalysis#readme",
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "jest": "^29.7.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.3.0",
     "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3"
   },
   "files": [
     "/dist"

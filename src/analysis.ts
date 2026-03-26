@@ -24,7 +24,7 @@ export interface FrequencyAnalysisResult {
  * @returns Frequency vs. amplitude per axis
  */
 export function analyzeAccelerometerData(samples: number[][], samplingRate: number, wideBand: boolean = false): FrequencyAnalysisResult {
-    if (samples.length < 1) {
+    if (samples.length < 1 || samples[0].length < 2) {
         throw new Error("Too few samples to perform frequency analysis");
     }
 
@@ -38,7 +38,7 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
         amplitudes: new Array(samples.length)
     };
     for (let i = 0; i < numFreqs; i++) {
-        result.frequencies[i] = i * freqResolution + freqResolution / 2;
+        result.frequencies[i] = (i + 1) * freqResolution;
     }
 
     for (let axis = 0; axis < samples.length; axis++) {
@@ -50,7 +50,7 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
         // Compute amplitudes
         const amplitudes = new Array(numFreqs);
         for (let k = 1; k <= numFreqs; k++) {
-            amplitudes[k - 1] = Math.sqrt(real[k] * real[k] + imag[k] * imag[k]) / numSamples;
+            amplitudes[k - 1] = 2 * Math.sqrt(real[k] * real[k] + imag[k] * imag[k]) / numSamples;
         }
         result.amplitudes[axis] = amplitudes;
     }

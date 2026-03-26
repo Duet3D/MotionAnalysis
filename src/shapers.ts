@@ -39,6 +39,10 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
         durations: []
     };
 
+    if (dampingFactor < 0 || dampingFactor >= 1) {
+        throw new Error("Damping factor must be >= 0 and < 1");
+    }
+
     const sqrtOneMinusZetaSquared = Math.sqrt(1 - Math.pow(dampingFactor, 2));
     const dampedFrequency = frequency * sqrtOneMinusZetaSquared;
     const dampedPeriod = 1/dampedFrequency;
@@ -114,7 +118,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             {
                 const zetaSquared = Math.pow(dampingFactor, 2);
                 const zetaCubed = zetaSquared * dampingFactor;
-                result.amplitudes.push((0.11275)                               + 0.76632                                 * dampingFactor + (3.29160)                               * zetaSquared + (-1.44380)                               * zetaCubed);
+                result.amplitudes.push((0.11275)                               + (0.76632)                                * dampingFactor + (3.29160)                               * zetaSquared + (-1.44380)                               * zetaCubed);
                 result.amplitudes.push((0.11275 + 0.23698)                     + (0.76632 + 0.61164)                     * dampingFactor + (3.29160 - 2.57850)                     * zetaSquared + (-1.44380 + 4.85220)                     * zetaCubed);
                 result.amplitudes.push((0.11275 + 0.23698 + 0.30008)           + (0.76632 + 0.61164 - 0.19062)           * dampingFactor + (3.29160 - 2.57850 - 2.14560)           * zetaSquared + (-1.44380 + 4.85220 + 0.13744)           * zetaCubed);
                 result.amplitudes.push((0.11275 + 0.23698 + 0.30008 + 0.23775) + (0.76632 + 0.61164 - 0.19062 - 0.73297) * dampingFactor + (3.29160 - 2.57850 - 2.14560 + 0.46885) * zetaSquared + (-1.44380 + 4.85220 + 0.13744 - 2.08650) * zetaCubed);
@@ -127,8 +131,7 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
             break;
 
         default:
-            // Other shaper types are not supported
-            return result as never;
+            throw new Error(`Unsupported input shaper type: ${type}`);
     }
     return result;
 }
