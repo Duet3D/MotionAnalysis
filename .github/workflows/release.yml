@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.get.outputs.version }}
+      disttag: ${{ steps.get.outputs.disttag }}
+      prerelease: ${{ steps.get.outputs.prerelease }}
+      publish: ${{ steps.get.outputs.publish }}
+      release: ${{ steps.get.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Read version and check what is already released
+        id: get
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=$(jq -r .name package.json)
+          version=$(jq -r .version package.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # An alpha, beta or rc goes out under its own dist-tag so that installs without a version keep resolving to the last stable release
+          identifier=${version#*-}
+          case "${identifier%%.*}" in
+            alpha|beta|rc)
+              echo "disttag=${identifier%%.*}" >> "$GITHUB_OUTPUT"
+              echo "prerelease=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "disttag=latest" >> "$GITHUB_OUTPUT"
+              echo "prerelease=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$version is already on npm, skipping the publish"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$version is new, publishing it"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+          if gh api "repos/${{ github.repository }}/git/ref/tags/v$version" >/dev/null 2>&1; then
+            echo "v$version is already tagged, skipping the release"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$version is new, creating a release"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: version
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # Publishing via OIDC instead of a token requires npm 11.5.1 or newer
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: npm publish --tag ${{ needs.version.outputs.disttag }}
+
+  release:
+    needs: [version, publish]
+    if: ${{ !cancelled() && needs.version.outputs.release == 'true' && needs.publish.result != 'failure' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ needs.version.outputs.prerelease }}" = "true" ]; then
+            prerelease=--prerelease
+          fi
+          gh release create "v${{ needs.version.outputs.version }}" --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Version ${{ needs.version.outputs.version }}" --generate-notes $prerelease
