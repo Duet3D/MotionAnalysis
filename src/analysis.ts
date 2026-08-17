@@ -1,6 +1,68 @@
 import { transform } from "./fft";
 
 /**
+ * Accelerometer dataset as recorded by RepRapFirmware
+ */
+export interface AccelerometerDataset {
+    /**
+     * Names of the recorded axes
+     */
+    axes: string[];
+
+    /**
+     * Sampling rate in Hz
+     */
+    samplingRate: number;
+
+    /**
+     * Number of sample overflows that occurred while recording
+     */
+    overflows: number;
+
+    /**
+     * Accelerometer samples per axis
+     */
+    samples: number[][];
+}
+
+/**
+ * Parse an accelerometer CSV file written by RepRapFirmware.
+ * The file starts with a "Sample,X,Y,Z" header (axes may be a subset), continues with one row per sample and ends with a "Rate <n>, overflows <n>" line
+ * @param content File content
+ * @returns Parsed dataset
+ */
+export function parseAccelerometerCsv(content: string): AccelerometerDataset {
+    const lines = content.split(/\r?\n/).filter(line => line.length > 0);
+    if (lines.length < 3 || !lines[0].startsWith("Sample,")) {
+        throw new Error("Invalid accelerometer CSV");
+    }
+
+    const details = /^Rate (\d+),? overflows (\d+)/.exec(lines[lines.length - 1]);
+    if (!details) {
+        throw new Error("Failed to read rate and overflows");
+    }
+
+    const axes = lines[0].split(",").slice(1);
+    const samples = axes.map(() => new Array<number>(lines.length - 2));
+    for (let i = 1; i < lines.length - 1; i++) {
+        const values = lines[i].split(",");
+        if (values.length !== axes.length + 1) {
+            throw new Error(`Invalid number of values in line ${i + 1}`);
+        }
+        for (let axis = 0; axis < axes.length; axis++) {
+            samples[axis][i - 1] = parseFloat(values[axis + 1]);
+        }
+    }
+
+    return {
+        axes,
+        samplingRate: parseFloat(details[1]),
+        overflows: parseFloat(details[2]),
+        samples
+    };
+}
+
+/**
  * Result of a frequency analysis
  */
 export interface FrequencyAnalysisResult {
@@ -56,4 +118,58 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
     }
 
     return result;
+}
+
+/**
+ * Analyze multiple accelerometer datasets and average their spectra.
+ * Each dataset is analyzed at its own sampling rate and length, the spectra are then resampled onto the coarsest common frequency grid via linear interpolation
+ * @param datasets Datasets to analyze, all with the same number of axes
+ * @param wideBand Perform wide-band analysis (more frequencies)
+ * @returns Averaged frequency vs. amplitude per axis
+ */
+export function analyzeAccelerometerDatasets(datasets: Array<Pick<AccelerometerDataset, "samplingRate" | "samples">>, wideBand: boolean = false): FrequencyAnalysisResult {
+    if (datasets.length < 1) {
+        throw new Error("No datasets to analyze");
+    }
+
+    const results = datasets.map(dataset => analyzeAccelerometerData(dataset.samples, dataset.samplingRate, wideBand));
+    const numAxes = results[0].amplitudes.length;
+    if (results.some(result => result.amplitudes.length !== numAxes)) {
+        throw new Error("Datasets must have the same number of axes");
+    }
+    if (results.length === 1) {
+        return results[0];
+    }
+
+    // Use the coarsest resolution as the target grid and stop where the first spectrum ends
+    const resolution = Math.max(...results.map(result => result.frequencies[0]));
+    const maxFrequency = Math.min(...results.map(result => result.frequencies[result.frequencies.length - 1]));
+    const frequencies: number[] = [];
+    for (let frequency = resolution; frequency <= maxFrequency + 1e-9; frequency += resolution) {
+        frequencies.push(frequency);
+    }
+
+    const amplitudes = Array.from({ length: numAxes }, () => new Array<number>(frequencies.length).fill(0));
+    for (const result of results) {
+        for (let axis = 0; axis < numAxes; axis++) {
+            for (let i = 0; i < frequencies.length; i++) {
+                amplitudes[axis][i] += interpolate(result.frequencies, result.amplitudes[axis], frequencies[i]) / results.length;
+            }
+        }
+    }
+    return { frequencies, amplitudes };
+}
+
+// Linear interpolation on a uniform ascending grid, clamped to the ends
+function interpolate(xValues: number[], yValues: number[], x: number): number {
+    const position = (x - xValues[0]) / (xValues[1] - xValues[0]);
+    const index = Math.floor(position);
+    if (index < 0) {
+        return yValues[0];
+    }
+    if (index >= xValues.length - 1) {
+        return yValues[yValues.length - 1];
+    }
+    const fraction = position - index;
+    return yValues[index] * (1 - fraction) + yValues[index + 1] * fraction;
 }
