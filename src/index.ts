@@ -5,3 +5,6 @@ export * from './analysis';
 
 // Export functionality for input shaper computations
 export * from './shapers';
+
+// Export functionality for motor harmonic analysis
+export * from './motor';

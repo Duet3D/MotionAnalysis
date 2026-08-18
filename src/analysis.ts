@@ -83,9 +83,10 @@ export interface FrequencyAnalysisResult {
  * @param samples Accelerometer samples of each axis
  * @param samplingRate Sampling rate in Hz
  * @param wideBand Perform wide-band analysis (more frequencies)
+ * @param applyWindow Remove the mean and apply a Hann window first, recommended for segments cut out of a longer recording
  * @returns Frequency vs. amplitude per axis
  */
-export function analyzeAccelerometerData(samples: number[][], samplingRate: number, wideBand: boolean = false): FrequencyAnalysisResult {
+export function analyzeAccelerometerData(samples: number[][], samplingRate: number, wideBand: boolean = false, applyWindow: boolean = false): FrequencyAnalysisResult {
     if (samples.length < 1 || samples[0].length < 2) {
         throw new Error("Too few samples to perform frequency analysis");
     }
@@ -105,14 +106,14 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
 
     for (let axis = 0; axis < samples.length; axis++) {
         // Perform FFT on the samples per axis
-        const real = samples[axis].slice(), imag = new Array(numSamples);
+        const real = applyWindow ? applyHannWindow(samples[axis]) : samples[axis].slice(), imag = new Array(numSamples);
         imag.fill(0);
         transform(real, imag);
 
-        // Compute amplitudes
-        const amplitudes = new Array(numFreqs);
+        // Compute amplitudes, the Hann window halves the coherent gain
+        const amplitudes = new Array(numFreqs), scale = applyWindow ? 4 / numSamples : 2 / numSamples;
         for (let k = 1; k <= numFreqs; k++) {
-            amplitudes[k - 1] = 2 * Math.sqrt(real[k] * real[k] + imag[k] * imag[k]) / numSamples;
+            amplitudes[k - 1] = scale * Math.sqrt(real[k] * real[k] + imag[k] * imag[k]);
         }
         result.amplitudes[axis] = amplitudes;
     }
@@ -125,14 +126,15 @@ export function analyzeAccelerometerData(samples: number[][], samplingRate: numb
  * Each dataset is analyzed at its own sampling rate and length, the spectra are then resampled onto the coarsest common frequency grid via linear interpolation
  * @param datasets Datasets to analyze, all with the same number of axes
  * @param wideBand Perform wide-band analysis (more frequencies)
+ * @param applyWindow Remove the mean and apply a Hann window first, see analyzeAccelerometerData
  * @returns Averaged frequency vs. amplitude per axis
  */
-export function analyzeAccelerometerDatasets(datasets: Array<Pick<AccelerometerDataset, "samplingRate" | "samples">>, wideBand: boolean = false): FrequencyAnalysisResult {
+export function analyzeAccelerometerDatasets(datasets: Array<Pick<AccelerometerDataset, "samplingRate" | "samples">>, wideBand: boolean = false, applyWindow: boolean = false): FrequencyAnalysisResult {
     if (datasets.length < 1) {
         throw new Error("No datasets to analyze");
     }
 
-    const results = datasets.map(dataset => analyzeAccelerometerData(dataset.samples, dataset.samplingRate, wideBand));
+    const results = datasets.map(dataset => analyzeAccelerometerData(dataset.samples, dataset.samplingRate, wideBand, applyWindow));
     const numAxes = results[0].amplitudes.length;
     if (results.some(result => result.amplitudes.length !== numAxes)) {
         throw new Error("Datasets must have the same number of axes");
@@ -158,6 +160,16 @@ export function analyzeAccelerometerDatasets(datasets: Array<Pick<AccelerometerD
         }
     }
     return { frequencies, amplitudes };
+}
+
+/**
+ * Remove the mean and apply a Hann window so cut-off segments don't smear the spectrum
+ * @param samples Samples to window
+ * @returns Windowed copy of the samples
+ */
+export function applyHannWindow(samples: number[]): number[] {
+    const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+    return samples.map((value, index) => (value - mean) * (0.5 - 0.5 * Math.cos(2 * Math.PI * index / samples.length)));
 }
 
 // Linear interpolation on a uniform ascending grid, clamped to the ends

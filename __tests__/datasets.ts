@@ -1,4 +1,4 @@
-import { analyzeAccelerometerDatasets, parseAccelerometerCsv } from "../src";
+import { analyzeAccelerometerData, analyzeAccelerometerDatasets, parseAccelerometerCsv } from "../src";
 
 function makeCsv(samplingRate: number, numSamples: number, frequency: number, overflows: number = 0): string {
     let content = "Sample,X,Y,Z\n";
@@ -52,4 +52,21 @@ test("analyzeAccelerometerDatasets", () => {
     expect(analyzeAccelerometerDatasets([datasets[0]])).toEqual(analyzeAccelerometerDatasets([datasets[0]]));
     expect(() => analyzeAccelerometerDatasets([])).toThrow();
     expect(() => analyzeAccelerometerDatasets([datasets[0], { samplingRate: 1000, samples: [datasets[0].samples[0]] }])).toThrow();
+});
+
+test("analyzeAccelerometerData with window", () => {
+    // Cut mid-cycle so the plain FFT leaks, the windowed one must still report the right amplitude at the peak
+    const dataset = parseAccelerometerCsv(makeCsv(1000, 1234, 45.6));
+    const result = analyzeAccelerometerData(dataset.samples, dataset.samplingRate, false, true);
+    let peakIndex = 0;
+    for (let i = 1; i < result.frequencies.length; i++) {
+        if (result.amplitudes[0][i] > result.amplitudes[0][peakIndex]) {
+            peakIndex = i;
+        }
+    }
+    expect(Math.abs(result.frequencies[peakIndex] - 45.6)).toBeLessThan(1000 / 1234);
+    expect(result.amplitudes[0][peakIndex]).toBeGreaterThan(0.8);
+    expect(result.amplitudes[0][peakIndex]).toBeLessThanOrEqual(1.01);
+    // The DC offset of 1g on Z must not show up at the lowest bins any more
+    expect(result.amplitudes[2][0]).toBeLessThan(0.01);
 });
