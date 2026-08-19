@@ -137,13 +137,15 @@ export function getInputShaperFactors(type: InputShaperType, frequency: number, 
 }
 
 /**
- * Compute the damping for the given frequencies with the given input shaper amplitudes and durations
- * @param frequencies Frequencies to compute the damping for
- * @param amplitudes Input shaper amplitudes (coefficients)
+ * Compute the residual vibration for the given frequencies with the given input shaper amplitudes and durations.
+ * With a damping ratio the impulses are weighted like the decaying oscillation they excite, so later impulses count for less than they would in the undamped case
+ * @param frequencies Frequencies to compute the residual for
+ * @param amplitudes Input shaper amplitudes (cumulative coefficients)
  * @param durations Input shaper durations (in s)
- * @returns Damping factor (0..1) per frequency
+ * @param dampingRatio Damping ratio of the vibration being suppressed (0 = undamped)
+ * @returns Residual vibration factor (0..1) per frequency
  */
-export function getInputShaperDamping(frequencies: number[], amplitudes: number[], durations: number[]): number[] {
+export function getInputShaperDamping(frequencies: number[], amplitudes: number[], durations: number[], dampingRatio: number = 0): number[] {
     // Perform input check
     if (amplitudes.length < 1) {
         throw new Error("Insufficient number of amplitudes");
@@ -165,14 +167,16 @@ export function getInputShaperDamping(frequencies: number[], amplitudes: number[
         accTimes.push(duration + accTimes[accTimes.length - 1]);
     }
 
-    // Calculate the actual damping per frequency
+    // Calculate the residual vibration per frequency (percentage residual vibration formula), the damped natural frequency is what the impulses are timed against
+    const zetaFactor = dampingRatio / Math.sqrt(1 - dampingRatio * dampingRatio), lastTime = accTimes[accTimes.length - 1];
     const result = new Array(frequencies.length);
     for (let i = 0; i < frequencies.length; i++) {
-        const frequency = frequencies[i];
+        const omega = 2 * Math.PI * frequencies[i];
         let totalSine = 0, totalCosine = 0;
         for (let k = 0; k < stepSizes.length; k++) {
-            totalSine += stepSizes[k] * Math.sin(2 * Math.PI * frequency * accTimes[k]);
-            totalCosine += stepSizes[k] * Math.cos(2 * Math.PI * frequency * accTimes[k]);
+            const weight = stepSizes[k] * Math.exp(zetaFactor * omega * (accTimes[k] - lastTime));
+            totalSine += weight * Math.sin(omega * accTimes[k]);
+            totalCosine += weight * Math.cos(omega * accTimes[k]);
         }
         result[i] = Math.sqrt(totalSine * totalSine + totalCosine * totalCosine);
     }
